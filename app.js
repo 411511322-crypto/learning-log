@@ -24,6 +24,7 @@
     save: $("save"),
     list: $("log-list"),
     count: $("log-count"),
+    weekly: $("weekly-stats"),
     status: $("status")
   };
 
@@ -39,6 +40,13 @@
   function today() {
     var d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+
+  // 今天往前推 n 天的日期，格式同上
+  function daysAgo(n) {
+    var d = new Date(today() + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - n);
+    return d.toISOString().slice(0, 10);
   }
 
   // ---------- 設定檢查：貼錯的東西在這裡先攔下來 ----------
@@ -155,6 +163,7 @@
     } else {
       els.list.replaceChildren();
       els.count.textContent = "";
+      els.weekly.textContent = "";
     }
   }
 
@@ -180,8 +189,24 @@
     else say(rows.length ? "" : "還沒有紀錄，寫下第一筆吧。");
   }
 
+  // 最近 7 天（今天和前 6 天，照日期欄算）：共幾分鐘、幾筆；沒填分鐘的算 0
+  function updateWeekly(rows) {
+    var from = daysAgo(6);
+    var to = today();
+    var minutes = 0;
+    var count = 0;
+    rows.forEach(function (row) {
+      if (row.log_date >= from && row.log_date <= to) {
+        count += 1;
+        minutes += Number(row.minutes) || 0;
+      }
+    });
+    els.weekly.textContent = "最近 7 天：共 " + minutes + " 分鐘、" + count + " 筆";
+  }
+
   function draw(rows) {
     els.count.textContent = "（" + rows.length + " 筆）";
+    updateWeekly(rows);
     var items = rows.map(function (row) {
       var li = document.createElement("li");
 
